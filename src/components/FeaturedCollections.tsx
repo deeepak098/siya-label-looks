@@ -1,26 +1,31 @@
 
+import { Link } from "react-router-dom";
+
 const FeaturedCollections = () => {
   const collections = [
     {
       id: 1,
-      title: "Summer Essentials",
-      description: "Light, breathable fabrics perfect for warm weather",
-      image: "https://images.unsplash.com/photo-1649972904349-6e44c42644a7?w=800&h=1000&fit=crop",
-      items: "24 pieces"
+      title: "Frocks",
+      description: "Elegant frocks for every occasion",
+      image: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&h=1000&fit=crop",
+      items: "24 pieces",
+      slug: "frocks"
     },
     {
       id: 2,
-      title: "Urban Elegance",
-      description: "Sophisticated pieces for the modern professional",
-      image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=800&h=1000&fit=crop",
-      items: "18 pieces"
+      title: "Dresses",
+      description: "Sophisticated dresses for modern women",
+      image: "https://images.unsplash.com/photo-1566479179817-c925b5318bf5?w=800&h=1000&fit=crop",
+      items: "32 pieces",
+      slug: "dresses"
     },
     {
       id: 3,
-      title: "Weekend Comfort",
-      description: "Casual luxury for your downtime",
-      image: "https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?w=800&h=1000&fit=crop",
-      items: "32 pieces"
+      title: "Co-ord Sets",
+      description: "Matching sets for effortless style",
+      image: "https://images.unsplash.com/photo-1571513722275-4b19c8f3e3ea?w=800&h=1000&fit=crop",
+      items: "28 pieces",
+      slug: "coord-sets"
     }
   ];
 
@@ -40,8 +45,9 @@ const FeaturedCollections = () => {
         {/* Collections grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {collections.map((collection, index) => (
-            <div 
-              key={collection.id} 
+            <Link
+              key={collection.id}
+              to={`/collections/${collection.slug}`}
               className="group cursor-pointer animate-fade-in"
               style={{ animationDelay: `${index * 200}ms` }}
             >
@@ -67,7 +73,7 @@ const FeaturedCollections = () => {
                   {collection.description}
                 </p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

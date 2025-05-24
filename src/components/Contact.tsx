@@ -1,4 +1,3 @@
-
 import { Mail, Phone, MapPin, Instagram, Twitter, Facebook } from "lucide-react";
 
 const Contact = () => {
@@ -6,14 +5,14 @@ const Contact = () => {
     {
       icon: Mail,
       title: "Email",
-      content: "hello@siyalabel.com",
-      href: "mailto:hello@siyalabel.com"
+      content: "siyalabell@gmail.com",
+      href: "mailto:siyalabell@gmail.com"
     },
     {
       icon: Phone,
       title: "Phone",
-      content: "+1 (555) 123-4567",
-      href: "tel:+15551234567"
+      content: "+91 9618258618",
+      href: "tel:+919618258618"
     },
     {
       icon: MapPin,
