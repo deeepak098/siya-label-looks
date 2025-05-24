@@ -1,6 +1,7 @@
 
 import { X, Minus, Plus, ShoppingBag } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface CartProps {
   isOpen: boolean;
@@ -9,41 +10,56 @@ interface CartProps {
 
 const Cart = ({ isOpen, onClose }: CartProps) => {
   const { state, dispatch } = useCart();
+  const { toast } = useToast();
 
-  const updateQuantity = (id: string, quantity: number) => {
-    dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
+  const updateQuantity = (id: string, newQuantity: number) => {
+    if (newQuantity === 0) {
+      dispatch({ type: 'REMOVE_ITEM', payload: id });
+      toast({
+        title: "Item removed",
+        description: "Item has been removed from your cart.",
+      });
+    } else {
+      dispatch({ 
+        type: 'UPDATE_QUANTITY', 
+        payload: { id, quantity: newQuantity } 
+      });
+    }
   };
 
-  const removeItem = (id: string) => {
-    dispatch({ type: 'REMOVE_ITEM', payload: id });
+  const handleCheckout = () => {
+    toast({
+      title: "Checkout",
+      description: "Redirecting to checkout page...",
+    });
+    // Here you would typically redirect to a checkout page or payment gateway
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose}></div>
-      
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl">
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-            <h2 className="text-lg font-medium text-gray-900">Shopping Cart</h2>
+          <div className="flex items-center justify-between p-6 border-b">
+            <h2 className="text-lg font-semibold text-gray-900">Shopping Cart</h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 transition-colors duration-200"
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors duration-300"
             >
               <X className="h-6 w-6" />
             </button>
           </div>
 
           {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="flex-1 overflow-y-auto p-6">
             {state.items.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <ShoppingBag className="h-16 w-16 text-gray-300 mb-4" />
-                <p className="text-gray-500 text-lg">Your cart is empty</p>
-                <p className="text-gray-400 text-sm">Add some items to get started</p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
+                <p className="text-gray-500">Add some beautiful items to get started!</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -54,37 +70,28 @@ const Cart = ({ isOpen, onClose }: CartProps) => {
                       alt={item.name}
                       className="h-16 w-16 rounded-lg object-cover"
                     />
-                    
                     <div className="flex-1">
                       <h3 className="text-sm font-medium text-gray-900">{item.name}</h3>
                       <p className="text-sm text-gray-500">Size: {item.size}</p>
-                      <p className="text-sm font-medium text-purple-600">₹{item.price.toLocaleString()}</p>
+                      <p className="text-sm font-semibold text-purple-600">₹{item.price.toLocaleString()}</p>
                     </div>
-                    
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors duration-200"
+                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors duration-300"
                       >
                         <Minus className="h-4 w-4" />
                       </button>
-                      
-                      <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                      
+                      <span className="text-sm font-medium min-w-[2rem] text-center">
+                        {item.quantity}
+                      </span>
                       <button
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors duration-200"
+                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors duration-300"
                       >
                         <Plus className="h-4 w-4" />
                       </button>
                     </div>
-                    
-                    <button
-                      onClick={() => removeItem(item.id)}
-                      className="text-gray-400 hover:text-red-500 transition-colors duration-200"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
                   </div>
                 ))}
               </div>
@@ -93,13 +100,15 @@ const Cart = ({ isOpen, onClose }: CartProps) => {
 
           {/* Footer */}
           {state.items.length > 0 && (
-            <div className="border-t border-gray-200 px-6 py-4">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-lg font-medium text-gray-900">Total</span>
-                <span className="text-lg font-semibold text-purple-600">₹{state.total.toLocaleString()}</span>
+            <div className="border-t p-6 space-y-4">
+              <div className="flex justify-between text-lg font-semibold">
+                <span>Total: </span>
+                <span className="text-purple-600">₹{state.total.toLocaleString()}</span>
               </div>
-              
-              <button className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-purple-700 transition-colors duration-300">
+              <button
+                onClick={handleCheckout}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-all duration-300 hover:scale-105"
+              >
                 Checkout
               </button>
             </div>
