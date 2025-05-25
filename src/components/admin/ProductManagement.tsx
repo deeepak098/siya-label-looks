@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,15 @@ interface Product {
   created_at: string;
 }
 
+const CATEGORIES = [
+  { value: "frocks", label: "Frocks" },
+  { value: "dresses", label: "Dresses" },
+  { value: "sarees", label: "Sarees" },
+  { value: "coord-sets", label: "Co-ord Sets" }
+];
+
+const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL"];
+
 const ProductManagement = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -30,7 +40,7 @@ const ProductManagement = () => {
     price: "",
     category: "",
     image: "",
-    sizes: "",
+    sizes: DEFAULT_SIZES.join(', '),
     in_stock: true
   });
   const { toast } = useToast();
@@ -60,13 +70,22 @@ const ProductManagement = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!formData.category) {
+      toast({
+        title: "Category required",
+        description: "Please select a category for the product",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const productData = {
         name: formData.name,
         price: parseFloat(formData.price),
         category: formData.category,
         image: formData.image,
-        sizes: formData.sizes.split(',').map(s => s.trim()),
+        sizes: formData.sizes.split(',').map(s => s.trim()).filter(s => s),
         in_stock: formData.in_stock
       };
 
@@ -87,7 +106,7 @@ const ProductManagement = () => {
         toast({ title: "Product added successfully" });
       }
 
-      setFormData({ name: "", price: "", category: "", image: "", sizes: "", in_stock: true });
+      setFormData({ name: "", price: "", category: "", image: "", sizes: DEFAULT_SIZES.join(', '), in_stock: true });
       setIsAddDialogOpen(false);
       setEditingProduct(null);
       fetchProducts();
@@ -133,6 +152,12 @@ const ProductManagement = () => {
     setIsAddDialogOpen(true);
   };
 
+  const handleAddNew = () => {
+    setEditingProduct(null);
+    setFormData({ name: "", price: "", category: "", image: "", sizes: DEFAULT_SIZES.join(', '), in_stock: true });
+    setIsAddDialogOpen(true);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -143,7 +168,7 @@ const ProductManagement = () => {
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-siya-500 to-magenta-500">
+              <Button onClick={handleAddNew} className="bg-gradient-to-r from-siya-500 to-magenta-500">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Product
               </Button>
@@ -170,6 +195,7 @@ const ProductManagement = () => {
                   <Input
                     id="price"
                     type="number"
+                    step="0.01"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                     required
@@ -177,13 +203,18 @@ const ProductManagement = () => {
                 </div>
                 <div>
                   <Label htmlFor="category">Category</Label>
-                  <Input
-                    id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    placeholder="e.g., Sarees, Kurtis, Lehengas"
-                    required
-                  />
+                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="image">Image URL</Label>
@@ -230,6 +261,7 @@ const ProductManagement = () => {
               <TableHead>Name</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Category</TableHead>
+              <TableHead>Sizes</TableHead>
               <TableHead>Stock</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -240,9 +272,12 @@ const ProductManagement = () => {
                 <TableCell>
                   <img src={product.image} alt={product.name} className="w-12 h-12 object-cover rounded" />
                 </TableCell>
-                <TableCell>{product.name}</TableCell>
+                <TableCell className="font-medium">{product.name}</TableCell>
                 <TableCell>₹{product.price}</TableCell>
-                <TableCell>{product.category}</TableCell>
+                <TableCell>
+                  <span className="capitalize">{product.category.replace('-', ' ')}</span>
+                </TableCell>
+                <TableCell>{product.sizes.join(', ')}</TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 rounded text-xs ${product.in_stock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {product.in_stock ? 'In Stock' : 'Out of Stock'}
@@ -260,6 +295,13 @@ const ProductManagement = () => {
                 </TableCell>
               </TableRow>
             ))}
+            {products.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                  No products found. Add your first product to get started!
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

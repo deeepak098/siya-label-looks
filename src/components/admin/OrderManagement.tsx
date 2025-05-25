@@ -13,6 +13,7 @@ interface Order {
   status: string;
   items: any[];
   created_at: string;
+  updated_at: string;
 }
 
 const OrderManagement = () => {
@@ -31,7 +32,14 @@ const OrderManagement = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrders(data || []);
+      
+      // Convert the data to match our Order interface
+      const ordersData = data?.map(order => ({
+        ...order,
+        items: Array.isArray(order.items) ? order.items : []
+      })) || [];
+      
+      setOrders(ordersData);
     } catch (error: any) {
       toast({
         title: "Error fetching orders",
@@ -41,20 +49,16 @@ const OrderManagement = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
+      case 'completed':
+        return 'default';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'processing':
-        return 'bg-blue-100 text-blue-800';
-      case 'shipped':
-        return 'bg-purple-100 text-purple-800';
-      case 'delivered':
-        return 'bg-green-100 text-green-800';
+        return 'secondary';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'destructive';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'secondary';
     }
   };
 
@@ -69,30 +73,35 @@ const OrderManagement = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Order ID</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Items</TableHead>
-              <TableHead>Total</TableHead>
+              <TableHead>Customer Email</TableHead>
+              <TableHead>Total Amount</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Items</TableHead>
               <TableHead>Date</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {orders.map((order) => (
               <TableRow key={order.id}>
-                <TableCell className="font-medium">#{order.id.slice(0, 8)}</TableCell>
+                <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}...</TableCell>
                 <TableCell>{order.customer_email}</TableCell>
-                <TableCell>{order.items?.length || 0} items</TableCell>
                 <TableCell>₹{order.total_amount}</TableCell>
                 <TableCell>
-                  <Badge className={getStatusColor(order.status)}>
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                  <Badge variant={getStatusBadgeVariant(order.status)}>
+                    {order.status}
                   </Badge>
                 </TableCell>
-                <TableCell>
-                  {new Date(order.created_at).toLocaleDateString()}
-                </TableCell>
+                <TableCell>{order.items.length} items</TableCell>
+                <TableCell>{new Date(order.created_at).toLocaleDateString()}</TableCell>
               </TableRow>
             ))}
+            {orders.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                  No orders found
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

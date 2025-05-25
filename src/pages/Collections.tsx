@@ -1,39 +1,81 @@
 
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
+
+interface CollectionInfo {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  itemCount: string;
+}
 
 const Collections = () => {
-  const collections = [
+  const [collections, setCollections] = useState<CollectionInfo[]>([
     {
       id: "frocks",
       title: "Frocks",
       description: "Elegant frocks for every occasion",
       image: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&h=1000&fit=crop",
-      itemCount: "24 pieces"
+      itemCount: "0 pieces"
     },
     {
       id: "dresses",
       title: "Dresses", 
       description: "Sophisticated dresses for modern women",
       image: "https://images.unsplash.com/photo-1566479179817-c925b5318bf5?w=800&h=1000&fit=crop",
-      itemCount: "32 pieces"
+      itemCount: "0 pieces"
     },
     {
       id: "sarees",
       title: "Sarees",
       description: "Traditional sarees with contemporary touch",
       image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&h=1000&fit=crop",
-      itemCount: "18 pieces"
+      itemCount: "0 pieces"
     },
     {
       id: "coord-sets",
       title: "Co-ord Sets",
       description: "Matching sets for effortless style",
       image: "https://images.unsplash.com/photo-1571513722275-4b19c8f3e3ea?w=800&h=1000&fit=crop",
-      itemCount: "28 pieces"
+      itemCount: "0 pieces"
     }
-  ];
+  ]);
+
+  useEffect(() => {
+    fetchProductCounts();
+  }, []);
+
+  const fetchProductCounts = async () => {
+    try {
+      const updatedCollections = await Promise.all(
+        collections.map(async (collection) => {
+          const { count, error } = await supabase
+            .from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('category', collection.id)
+            .eq('in_stock', true);
+
+          if (error) {
+            console.error(`Error fetching count for ${collection.id}:`, error);
+            return collection;
+          }
+
+          return {
+            ...collection,
+            itemCount: `${count || 0} piece${count !== 1 ? 's' : ''}`
+          };
+        })
+      );
+
+      setCollections(updatedCollections);
+    } catch (error) {
+      console.error('Error fetching product counts:', error);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-siya-50 via-white to-magenta-50">

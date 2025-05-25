@@ -1,14 +1,25 @@
 
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface CollectionInfo {
+  id: number;
+  title: string;
+  description: string;
+  image: string;
+  items: string;
+  slug: string;
+}
 
 const FeaturedCollections = () => {
-  const collections = [
+  const [collections, setCollections] = useState<CollectionInfo[]>([
     {
       id: 1,
       title: "Frocks",
       description: "Elegant frocks for every occasion",
       image: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&h=1000&fit=crop",
-      items: "24 pieces",
+      items: "0 pieces",
       slug: "frocks"
     },
     {
@@ -16,7 +27,7 @@ const FeaturedCollections = () => {
       title: "Dresses",
       description: "Sophisticated dresses for modern women",
       image: "https://images.unsplash.com/photo-1566479179817-c925b5318bf5?w=800&h=1000&fit=crop",
-      items: "32 pieces",
+      items: "0 pieces",
       slug: "dresses"
     },
     {
@@ -24,7 +35,7 @@ const FeaturedCollections = () => {
       title: "Sarees",
       description: "Traditional sarees with contemporary touch",
       image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&h=1000&fit=crop",
-      items: "18 pieces",
+      items: "0 pieces",
       slug: "sarees"
     },
     {
@@ -32,10 +43,45 @@ const FeaturedCollections = () => {
       title: "Co-ord Sets",
       description: "Matching sets for effortless style",
       image: "https://images.unsplash.com/photo-1571513722275-4b19c8f3e3ea?w=800&h=1000&fit=crop",
-      items: "28 pieces",
+      items: "0 pieces",
       slug: "coord-sets"
     }
-  ];
+  ]);
+
+  useEffect(() => {
+    fetchProductCounts();
+  }, []);
+
+  const fetchProductCounts = async () => {
+    try {
+      // Get counts for each category
+      const categories = ['frocks', 'dresses', 'sarees', 'coord-sets'];
+      
+      const updatedCollections = await Promise.all(
+        collections.map(async (collection) => {
+          const { count, error } = await supabase
+            .from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('category', collection.slug)
+            .eq('in_stock', true);
+
+          if (error) {
+            console.error(`Error fetching count for ${collection.slug}:`, error);
+            return collection;
+          }
+
+          return {
+            ...collection,
+            items: `${count || 0} piece${count !== 1 ? 's' : ''}`
+          };
+        })
+      );
+
+      setCollections(updatedCollections);
+    } catch (error) {
+      console.error('Error fetching product counts:', error);
+    }
+  };
 
   return (
     <section id="collections" className="py-12 md:py-20 bg-gradient-to-br from-white via-siya-50/30 to-magenta-50/30">

@@ -1,11 +1,57 @@
 
 import { useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+}
 
 const CollectionDetail = () => {
   const { category } = useParams();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (category) {
+      fetchProducts();
+    }
+  }, [category]);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, price, image, category')
+        .eq('category', category)
+        .eq('in_stock', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error: any) {
+      console.error('Error fetching products:', error);
+      toast({
+        title: "Error loading products",
+        description: "Failed to load products. Please try again.",
+        variant: "destructive",
+      });
+      // Fallback to empty array if there's an error
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getCollectionInfo = (cat: string) => {
     switch (cat) {
@@ -42,43 +88,7 @@ const CollectionDetail = () => {
     }
   };
 
-  const generateProducts = (category: string, count: number = 12) => {
-    const baseImages = {
-      frocks: [
-        "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&h=500&fit=crop",
-        "https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400&h=500&fit=crop",
-        "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&h=500&fit=crop"
-      ],
-      dresses: [
-        "https://images.unsplash.com/photo-1566479179817-c925b5318bf5?w=400&h=500&fit=crop",
-        "https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&h=500&fit=crop",
-        "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=500&fit=crop"
-      ],
-      sarees: [
-        "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=500&fit=crop",
-        "https://images.unsplash.com/photo-1583391733956-6c78276477e1?w=400&h=500&fit=crop",
-        "https://images.unsplash.com/photo-1631987324582-ddadff01c7ed?w=400&h=500&fit=crop"
-      ],
-      "coord-sets": [
-        "https://images.unsplash.com/photo-1571513722275-4b19c8f3e3ea?w=400&h=500&fit=crop",
-        "https://images.unsplash.com/photo-1581044777550-4cfa60707c03?w=400&h=500&fit=crop",
-        "https://images.unsplash.com/photo-1559582927-47108e2fb9d4?w=400&h=500&fit=crop"
-      ]
-    };
-
-    const categoryImages = baseImages[category as keyof typeof baseImages] || baseImages.dresses;
-    
-    return Array.from({ length: count }, (_, i) => ({
-      id: `${category}-${i + 1}`,
-      name: `${getCollectionInfo(category).title.split(' ')[1]} ${i + 1}`,
-      price: Math.floor(Math.random() * 5000) + 1500,
-      image: categoryImages[i % categoryImages.length],
-      category: category
-    }));
-  };
-
   const collectionInfo = getCollectionInfo(category || "");
-  const products = generateProducts(category || "", 12);
 
   return (
     <div className="min-h-screen bg-white">
@@ -104,11 +114,27 @@ const CollectionDetail = () => {
       {/* Products Grid */}
       <section className="py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {products.map((product, index) => (
-              <ProductCard key={product.id} product={product} index={index} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-siya-500"></div>
+            </div>
+          ) : products.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {products.map((product, index) => (
+                <ProductCard key={product.id} product={product} index={index} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20">
+              <div className="max-w-md mx-auto">
+                <h3 className="text-2xl font-semibold text-gray-700 mb-4">No Products Found</h3>
+                <p className="text-gray-500 mb-6">
+                  We're working on adding amazing products to this collection. Check back soon!
+                </p>
+                <div className="w-24 h-1 bg-gradient-to-r from-siya-500 to-magenta-500 mx-auto rounded-full"></div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
