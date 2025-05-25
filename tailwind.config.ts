@@ -141,6 +141,9 @@ export default {
 			},
 			backgroundSize: {
 				'300%': '300%'
+			},
+			screens: {
+				'xs': '475px',
 			}
 		}
 	},

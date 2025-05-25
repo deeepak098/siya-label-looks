@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Menu, X, ShoppingBag } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import Cart from "./Cart";
 
@@ -9,12 +9,30 @@ const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { state } = useCart();
+  const navigate = useNavigate();
 
   const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    // Check if we're on the home page
+    if (window.location.pathname === '/') {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // Navigate to home page first, then scroll
+      navigate('/');
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
     }
+    setIsMenuOpen(false);
+  };
+
+  const handleHomeClick = () => {
+    navigate('/');
     setIsMenuOpen(false);
   };
 
@@ -24,18 +42,18 @@ const Navigation = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center group">
+            <Link to="/" onClick={handleHomeClick} className="flex items-center group">
               <img 
                 src="/lovable-uploads/02f499e8-6cbc-48bc-848a-e0ddac0d8f22.png" 
                 alt="Siyalabel" 
-                className="h-10 w-auto transition-transform duration-300 group-hover:scale-105"
+                className="h-8 md:h-10 w-auto transition-transform duration-300 group-hover:scale-105"
               />
             </Link>
 
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-8">
               <button 
-                onClick={() => scrollToSection('home')}
+                onClick={handleHomeClick}
                 className="text-gray-700 hover:text-siya-600 transition-all duration-300 font-medium relative after:content-[''] after:absolute after:w-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-gradient-to-r after:from-siya-500 after:to-magenta-500 after:transition-all after:duration-300 hover:after:w-full"
               >
                 Home
@@ -100,7 +118,7 @@ const Navigation = () => {
             <div className="md:hidden py-4 border-t border-siya-100 bg-white/95 backdrop-blur-md">
               <div className="flex flex-col space-y-4">
                 <button 
-                  onClick={() => scrollToSection('home')}
+                  onClick={handleHomeClick}
                   className="text-left text-gray-700 hover:text-siya-600 transition-colors duration-300 font-medium py-2"
                 >
                   Home
