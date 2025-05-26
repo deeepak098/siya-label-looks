@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import SizeSelector from "./SizeSelector";
 import ImageUpload from "./ImageUpload";
+import InventoryManager from "./InventoryManager";
 
 interface Product {
   id: string;
@@ -219,76 +220,88 @@ const ProductManagement = () => {
                 Add Product
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
                 <DialogDescription>
-                  {editingProduct ? 'Update product details' : 'Add a new product to your inventory'}
+                  {editingProduct ? 'Update product details and manage inventory' : 'Add a new product to your inventory'}
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Product Name</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="price">Price (₹)</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-                
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="name">Product Name</Label>
+                        <Input
+                          id="name"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="price">Price (₹)</Label>
+                        <Input
+                          id="price"
+                          type="number"
+                          step="0.01"
+                          value={formData.price}
+                          onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="category">Category</Label>
+                      <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CATEGORIES.map((category) => (
+                            <SelectItem key={category.value} value={category.value}>
+                              {category.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <ImageUpload
+                      imageUrl={formData.image}
+                      onImageChange={(url) => setFormData({ ...formData, image: url })}
+                    />
+
+                    <SizeSelector
+                      selectedSizes={formData.sizes}
+                      onSizesChange={(sizes) => setFormData({ ...formData, sizes })}
+                    />
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="in_stock"
+                        checked={formData.in_stock}
+                        onChange={(e) => setFormData({ ...formData, in_stock: e.target.checked })}
+                      />
+                      <Label htmlFor="in_stock">In Stock</Label>
+                    </div>
+                    <Button type="submit" className="w-full">
+                      {editingProduct ? 'Update Product' : 'Add Product'}
+                    </Button>
+                  </form>
                 </div>
-
-                <ImageUpload
-                  imageUrl={formData.image}
-                  onImageChange={(url) => setFormData({ ...formData, image: url })}
-                />
-
-                <SizeSelector
-                  selectedSizes={formData.sizes}
-                  onSizesChange={(sizes) => setFormData({ ...formData, sizes })}
-                />
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="in_stock"
-                    checked={formData.in_stock}
-                    onChange={(e) => setFormData({ ...formData, in_stock: e.target.checked })}
-                  />
-                  <Label htmlFor="in_stock">In Stock</Label>
+                <div>
+                  {editingProduct && (
+                    <InventoryManager 
+                      productId={editingProduct.id} 
+                      sizes={formData.sizes}
+                    />
+                  )}
                 </div>
-                <Button type="submit" className="w-full">
-                  {editingProduct ? 'Update Product' : 'Add Product'}
-                </Button>
-              </form>
+              </div>
             </DialogContent>
           </Dialog>
         </div>

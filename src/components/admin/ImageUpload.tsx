@@ -102,7 +102,7 @@ const ImageUpload = ({ imageUrl, onImageChange }: ImageUploadProps) => {
       ) : (
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
           <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-          <p className="text-sm text-gray-500 mb-4">Upload product image</p>
+          <p className="text-sm text-gray-500 mb-4">Click below to upload an image from your device</p>
         </div>
       )}
 
