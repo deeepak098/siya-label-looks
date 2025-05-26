@@ -109,48 +109,54 @@ const CheckoutForm = ({ isOpen, onClose }: CheckoutFormProps) => {
     setIsLoading(true);
 
     try {
-      // Create order
-      const { data: orderData, error: orderError } = await supabase
+      // Create order with proper type casting for items
+      const orderData = {
+        customer_email: formData.email,
+        total_amount: state.total - discount,
+        items: state.items as any, // Cast to any to match Json type
+        status: 'pending'
+      };
+
+      const { data: order, error: orderError } = await supabase
         .from('orders')
-        .insert([{
-          customer_email: formData.email,
-          total_amount: state.total - discount,
-          items: state.items,
-          status: 'pending'
-        }])
+        .insert(orderData)
         .select()
         .single();
 
       if (orderError) throw orderError;
 
       // Create customer order details
+      const customerOrderData = {
+        order_id: order.id,
+        customer_name: formData.name,
+        customer_email: formData.email,
+        customer_phone: formData.phone,
+        shipping_address: {
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          pincode: formData.pincode
+        },
+        discount_code: appliedDiscountCode,
+        discount_amount: discount
+      };
+
       const { error: customerError } = await supabase
         .from('customer_orders')
-        .insert([{
-          order_id: orderData.id,
-          customer_name: formData.name,
-          customer_email: formData.email,
-          customer_phone: formData.phone,
-          shipping_address: {
-            address: formData.address,
-            city: formData.city,
-            state: formData.state,
-            pincode: formData.pincode
-          },
-          discount_code: appliedDiscountCode,
-          discount_amount: discount
-        }]);
+        .insert(customerOrderData);
 
       if (customerError) throw customerError;
 
       // Update discount code usage if applied
       if (appliedDiscountCode) {
-        await supabase.rpc('increment', {
-          table_name: 'discount_codes',
-          column_name: 'used_count',
-          row_id: appliedDiscountCode,
-          increment_by: 1
-        });
+        const { error: updateError } = await supabase
+          .from('discount_codes')
+          .update({ used_count: supabase.raw('used_count + 1') })
+          .eq('code', appliedDiscountCode);
+
+        if (updateError) {
+          console.error('Error updating discount code usage:', updateError);
+        }
       }
 
       // Clear cart
@@ -158,7 +164,7 @@ const CheckoutForm = ({ isOpen, onClose }: CheckoutFormProps) => {
 
       toast({
         title: "Order placed successfully!",
-        description: `Order ID: ${orderData.id.slice(0, 8)}...`,
+        description: `Order ID: ${order.id.slice(0, 8)}...`,
       });
 
       onClose();
