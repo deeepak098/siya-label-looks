@@ -149,13 +149,22 @@ const CheckoutForm = ({ isOpen, onClose }: CheckoutFormProps) => {
 
       // Update discount code usage if applied
       if (appliedDiscountCode) {
-        const { error: updateError } = await supabase
+        // First get current count
+        const { data: codeData, error: fetchError } = await supabase
           .from('discount_codes')
-          .update({ used_count: supabase.raw('used_count + 1') })
-          .eq('code', appliedDiscountCode);
+          .select('used_count')
+          .eq('code', appliedDiscountCode)
+          .single();
 
-        if (updateError) {
-          console.error('Error updating discount code usage:', updateError);
+        if (!fetchError && codeData) {
+          const { error: updateError } = await supabase
+            .from('discount_codes')
+            .update({ used_count: codeData.used_count + 1 })
+            .eq('code', appliedDiscountCode);
+
+          if (updateError) {
+            console.error('Error updating discount code usage:', updateError);
+          }
         }
       }
 

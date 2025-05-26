@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import SizeSelector from "./SizeSelector";
+import ImageUpload from "./ImageUpload";
 
 interface Product {
   id: string;
@@ -29,8 +31,6 @@ const CATEGORIES = [
   { value: "coord-sets", label: "Co-ord Sets" }
 ];
 
-const DEFAULT_SIZES = ["XS", "S", "M", "L", "XL"];
-
 const ProductManagement = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -40,7 +40,7 @@ const ProductManagement = () => {
     price: "",
     category: "",
     image: "",
-    sizes: DEFAULT_SIZES.join(', '),
+    sizes: [] as string[],
     in_stock: true
   });
   const { toast } = useToast();
@@ -67,6 +67,23 @@ const ProductManagement = () => {
     }
   };
 
+  const createInventoryEntries = async (productId: string, sizes: string[]) => {
+    const inventoryEntries = sizes.map(size => ({
+      product_id: productId,
+      size: size,
+      quantity: 0,
+      is_available: true
+    }));
+
+    const { error } = await supabase
+      .from('inventory')
+      .insert(inventoryEntries);
+
+    if (error) {
+      console.error('Error creating inventory entries:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -78,6 +95,15 @@ const ProductManagement = () => {
       });
       return;
     }
+
+    if (formData.sizes.length === 0) {
+      toast({
+        title: "Sizes required",
+        description: "Please select at least one size for the product",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       const productData = {
@@ -85,7 +111,7 @@ const ProductManagement = () => {
         price: parseFloat(formData.price),
         category: formData.category,
         image: formData.image,
-        sizes: formData.sizes.split(',').map(s => s.trim()).filter(s => s),
+        sizes: formData.sizes,
         in_stock: formData.in_stock
       };
 
@@ -96,17 +122,37 @@ const ProductManagement = () => {
           .eq('id', editingProduct.id);
 
         if (error) throw error;
+
+        // Update inventory entries for new sizes
+        const { data: existingInventory } = await supabase
+          .from('inventory')
+          .select('size')
+          .eq('product_id', editingProduct.id);
+
+        const existingSizes = existingInventory?.map(inv => inv.size) || [];
+        const newSizes = formData.sizes.filter(size => !existingSizes.includes(size));
+        
+        if (newSizes.length > 0) {
+          await createInventoryEntries(editingProduct.id, newSizes);
+        }
+
         toast({ title: "Product updated successfully" });
       } else {
-        const { error } = await supabase
+        const { data: product, error } = await supabase
           .from('products')
-          .insert([productData]);
+          .insert([productData])
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Create inventory entries for all sizes
+        await createInventoryEntries(product.id, formData.sizes);
+
         toast({ title: "Product added successfully" });
       }
 
-      setFormData({ name: "", price: "", category: "", image: "", sizes: DEFAULT_SIZES.join(', '), in_stock: true });
+      setFormData({ name: "", price: "", category: "", image: "", sizes: [], in_stock: true });
       setIsAddDialogOpen(false);
       setEditingProduct(null);
       fetchProducts();
@@ -146,7 +192,7 @@ const ProductManagement = () => {
       price: product.price.toString(),
       category: product.category,
       image: product.image,
-      sizes: product.sizes.join(', '),
+      sizes: product.sizes,
       in_stock: product.in_stock
     });
     setIsAddDialogOpen(true);
@@ -154,7 +200,7 @@ const ProductManagement = () => {
 
   const handleAddNew = () => {
     setEditingProduct(null);
-    setFormData({ name: "", price: "", category: "", image: "", sizes: DEFAULT_SIZES.join(', '), in_stock: true });
+    setFormData({ name: "", price: "", category: "", image: "", sizes: [], in_stock: true });
     setIsAddDialogOpen(true);
   };
 
@@ -173,34 +219,37 @@ const ProductManagement = () => {
                 Add Product
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
                 <DialogDescription>
                   {editingProduct ? 'Update product details' : 'Add a new product to your inventory'}
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Product Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                  />
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Product Name</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="price">Price (₹)</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="price">Price (₹)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    required
-                  />
-                </div>
+                
                 <div>
                   <Label htmlFor="category">Category</Label>
                   <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
@@ -216,26 +265,17 @@ const ProductManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="image">Image URL</Label>
-                  <Input
-                    id="image"
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="sizes">Sizes (comma separated)</Label>
-                  <Input
-                    id="sizes"
-                    value={formData.sizes}
-                    onChange={(e) => setFormData({ ...formData, sizes: e.target.value })}
-                    placeholder="XS, S, M, L, XL"
-                    required
-                  />
-                </div>
+
+                <ImageUpload
+                  imageUrl={formData.image}
+                  onImageChange={(url) => setFormData({ ...formData, image: url })}
+                />
+
+                <SizeSelector
+                  selectedSizes={formData.sizes}
+                  onSizesChange={(sizes) => setFormData({ ...formData, sizes })}
+                />
+
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
