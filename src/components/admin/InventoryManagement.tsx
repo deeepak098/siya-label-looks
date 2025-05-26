@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -12,6 +13,7 @@ interface InventoryItem {
   product_id: string;
   size: string;
   quantity: number;
+  is_available: boolean;
   product: {
     name: string;
     image: string;
@@ -72,6 +74,30 @@ const InventoryManagement = () => {
     }
   };
 
+  const updateAvailability = async (inventoryId: string, isAvailable: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('inventory')
+        .update({ is_available: isAvailable })
+        .eq('id', inventoryId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Availability updated",
+        description: `Size has been marked as ${isAvailable ? 'available' : 'unavailable'}`,
+      });
+
+      fetchInventory();
+    } catch (error: any) {
+      toast({
+        title: "Error updating availability",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleQuantityChange = (inventoryId: string, value: string) => {
     const quantity = parseInt(value) || 0;
     setEditingQuantity({ ...editingQuantity, [inventoryId]: quantity });
@@ -90,7 +116,7 @@ const InventoryManagement = () => {
     <Card>
       <CardHeader>
         <CardTitle>Inventory Management</CardTitle>
-        <CardDescription>Manage stock quantities for all products</CardDescription>
+        <CardDescription>Manage stock quantities and availability for all products by size</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
@@ -100,6 +126,7 @@ const InventoryManagement = () => {
               <TableHead>Size</TableHead>
               <TableHead>Current Quantity</TableHead>
               <TableHead>Update Quantity</TableHead>
+              <TableHead>Available</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -114,7 +141,9 @@ const InventoryManagement = () => {
                   />
                   <span>{item.product.name}</span>
                 </TableCell>
-                <TableCell>{item.size}</TableCell>
+                <TableCell>
+                  <span className="px-2 py-1 bg-gray-100 rounded text-sm">{item.size}</span>
+                </TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 rounded text-xs ${
                     item.quantity > 10 ? 'bg-green-100 text-green-800' : 
@@ -134,6 +163,12 @@ const InventoryManagement = () => {
                   />
                 </TableCell>
                 <TableCell>
+                  <Switch
+                    checked={item.is_available}
+                    onCheckedChange={(checked) => updateAvailability(item.id, checked)}
+                  />
+                </TableCell>
+                <TableCell>
                   <Button 
                     size="sm" 
                     onClick={() => saveQuantity(item.id)}
@@ -144,6 +179,13 @@ const InventoryManagement = () => {
                 </TableCell>
               </TableRow>
             ))}
+            {inventory.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                  No inventory found. Add products first to manage inventory.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

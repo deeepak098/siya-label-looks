@@ -9,10 +9,103 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      customer_orders: {
+        Row: {
+          created_at: string | null
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          discount_amount: number | null
+          discount_code: string | null
+          id: string
+          order_id: string | null
+          shipping_address: Json
+        }
+        Insert: {
+          created_at?: string | null
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          discount_amount?: number | null
+          discount_code?: string | null
+          id?: string
+          order_id?: string | null
+          shipping_address: Json
+        }
+        Update: {
+          created_at?: string | null
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string
+          discount_amount?: number | null
+          discount_code?: string | null
+          id?: string
+          order_id?: string | null
+          shipping_address?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discount_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          min_order_amount: number | null
+          name: string
+          type: string
+          updated_at: string | null
+          usage_limit: number | null
+          used_count: number | null
+          valid_from: string | null
+          valid_until: string | null
+          value: number
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_order_amount?: number | null
+          name: string
+          type: string
+          updated_at?: string | null
+          usage_limit?: number | null
+          used_count?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+          value: number
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_order_amount?: number | null
+          name?: string
+          type?: string
+          updated_at?: string | null
+          usage_limit?: number | null
+          used_count?: number | null
+          valid_from?: string | null
+          valid_until?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
       inventory: {
         Row: {
           created_at: string | null
           id: string
+          is_available: boolean | null
           product_id: string | null
           quantity: number
           size: string
@@ -21,6 +114,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          is_available?: boolean | null
           product_id?: string | null
           quantity?: number
           size: string
@@ -29,6 +123,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          is_available?: boolean | null
           product_id?: string | null
           quantity?: number
           size?: string

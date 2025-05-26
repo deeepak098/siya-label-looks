@@ -4,12 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, ShoppingCart, Users, DollarSign, LogOut } from "lucide-react";
+import { Package, ShoppingCart, Users, DollarSign, LogOut, Percent } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ProductManagement from "@/components/admin/ProductManagement";
 import OrderManagement from "@/components/admin/OrderManagement";
 import InventoryManagement from "@/components/admin/InventoryManagement";
+import DiscountCodeManagement from "@/components/admin/DiscountCodeManagement";
 
 const AdminDashboard = () => {
   const [user, setUser] = useState(null);
@@ -93,10 +94,11 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="inventory">Inventory</TabsTrigger>
+            <TabsTrigger value="discounts">Discount Codes</TabsTrigger>
           </TabsList>
           
           <TabsContent value="products">
@@ -109,6 +111,10 @@ const AdminDashboard = () => {
           
           <TabsContent value="inventory">
             <InventoryManagement />
+          </TabsContent>
+          
+          <TabsContent value="discounts">
+            <DiscountCodeManagement />
           </TabsContent>
         </Tabs>
       </div>
