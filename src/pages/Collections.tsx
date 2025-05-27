@@ -14,66 +14,80 @@ interface CollectionInfo {
 }
 
 const Collections = () => {
-  const [collections, setCollections] = useState<CollectionInfo[]>([
-    {
-      id: "frocks",
-      title: "Frocks",
-      description: "Elegant frocks for every occasion",
-      image: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&h=1000&fit=crop",
-      itemCount: "0 pieces"
-    },
-    {
-      id: "dresses",
-      title: "Dresses", 
-      description: "Sophisticated dresses for modern women",
-      image: "https://images.unsplash.com/photo-1566479179817-c925b5318bf5?w=800&h=1000&fit=crop",
-      itemCount: "0 pieces"
-    },
-    {
-      id: "sarees",
-      title: "Sarees",
-      description: "Traditional sarees with contemporary touch",
-      image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&h=1000&fit=crop",
-      itemCount: "0 pieces"
-    },
-    {
-      id: "coord-sets",
-      title: "Co-ord Sets",
-      description: "Matching sets for effortless style",
-      image: "https://images.unsplash.com/photo-1571513722275-4b19c8f3e3ea?w=800&h=1000&fit=crop",
-      itemCount: "0 pieces"
-    }
-  ]);
+  const [collections, setCollections] = useState<CollectionInfo[]>([]);
 
   useEffect(() => {
-    fetchProductCounts();
+    fetchCollections();
   }, []);
 
-  const fetchProductCounts = async () => {
+  const fetchCollections = async () => {
     try {
-      const updatedCollections = await Promise.all(
-        collections.map(async (collection) => {
+      // Fetch categories from database
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+
+      if (categoriesError) throw categoriesError;
+
+      // Fetch product counts for each category
+      const collectionsWithCounts = await Promise.all(
+        (categoriesData || []).map(async (category) => {
           const { count, error } = await supabase
             .from('products')
             .select('*', { count: 'exact', head: true })
-            .eq('category', collection.id)
+            .eq('category', category.slug)
             .eq('in_stock', true);
 
           if (error) {
-            console.error(`Error fetching count for ${collection.id}:`, error);
-            return collection;
+            console.error(`Error fetching count for ${category.slug}:`, error);
           }
 
           return {
-            ...collection,
+            id: category.slug,
+            title: category.name,
+            description: category.description || `Discover our ${category.name.toLowerCase()} collection`,
+            image: category.image_url || 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&h=1000&fit=crop',
             itemCount: `${count || 0} piece${count !== 1 ? 's' : ''}`
           };
         })
       );
 
-      setCollections(updatedCollections);
+      setCollections(collectionsWithCounts);
     } catch (error) {
-      console.error('Error fetching product counts:', error);
+      console.error('Error fetching collections:', error);
+      // Fallback to default collections if database fetch fails
+      setCollections([
+        {
+          id: "frocks",
+          title: "Frocks",
+          description: "Elegant frocks for every occasion",
+          image: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=800&h=1000&fit=crop",
+          itemCount: "0 pieces"
+        },
+        {
+          id: "dresses",
+          title: "Dresses", 
+          description: "Sophisticated dresses for modern women",
+          image: "https://images.unsplash.com/photo-1566479179817-c925b5318bf5?w=800&h=1000&fit=crop",
+          itemCount: "0 pieces"
+        },
+        {
+          id: "sarees",
+          title: "Sarees",
+          description: "Traditional sarees with contemporary touch",
+          image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800&h=1000&fit=crop",
+          itemCount: "0 pieces"
+        },
+        {
+          id: "coord-sets",
+          title: "Co-ord Sets",
+          description: "Matching sets for effortless style",
+          image: "https://images.unsplash.com/photo-1571513722275-4b19c8f3e3ea?w=800&h=1000&fit=crop",
+          itemCount: "0 pieces"
+        }
+      ]);
     }
   };
 
