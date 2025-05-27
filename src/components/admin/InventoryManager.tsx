@@ -34,13 +34,17 @@ const InventoryManager = ({ productId, sizes }: InventoryManagerProps) => {
       const { data, error } = await supabase
         .from('inventory')
         .select('*')
-        .eq('product_id', productId)
-        .in('size', sizes);
+        .eq('product_id', productId);
 
       if (error) throw error;
 
-      // Create inventory entries for missing sizes
-      const existingSizes = data?.map(item => item.size) || [];
+      console.log('Fetched inventory:', data);
+
+      // Create inventory entries for all current sizes
+      const existingInventory = data || [];
+      const existingSizes = existingInventory.map(item => item.size);
+      
+      // Add missing sizes
       const missingSizes = sizes.filter(size => !existingSizes.includes(size));
       
       if (missingSizes.length > 0) {
@@ -58,9 +62,24 @@ const InventoryManager = ({ productId, sizes }: InventoryManagerProps) => {
 
         if (insertError) throw insertError;
         
-        setInventory([...(data || []), ...(newData || [])]);
+        setInventory([...existingInventory, ...(newData || [])]);
       } else {
-        setInventory(data || []);
+        setInventory(existingInventory);
+      }
+
+      // Remove inventory entries for sizes no longer selected
+      const sizesToRemove = existingSizes.filter(size => !sizes.includes(size));
+      if (sizesToRemove.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('inventory')
+          .delete()
+          .eq('product_id', productId)
+          .in('size', sizesToRemove);
+
+        if (deleteError) throw deleteError;
+        
+        // Update local state
+        setInventory(prev => prev.filter(item => sizes.includes(item.size)));
       }
     } catch (error: any) {
       console.error('Error fetching inventory:', error);
@@ -119,7 +138,9 @@ const InventoryManager = ({ productId, sizes }: InventoryManagerProps) => {
     <div className="space-y-4">
       <Label className="text-sm font-medium">Stock Management</Label>
       <div className="space-y-3">
-        {inventory.map((item) => (
+        {inventory
+          .filter(item => sizes.includes(item.size))
+          .map((item) => (
           <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg">
             <div className="flex-1">
               <Label className="text-sm font-medium">Size {item.size}</Label>
@@ -151,7 +172,7 @@ const InventoryManager = ({ productId, sizes }: InventoryManagerProps) => {
             </div>
           </div>
         ))}
-        {inventory.length === 0 && (
+        {inventory.filter(item => sizes.includes(item.size)).length === 0 && (
           <div className="text-sm text-gray-500 text-center py-4">
             No inventory entries found. Add sizes to create inventory.
           </div>

@@ -14,6 +14,9 @@ interface Order {
   items: any[];
   created_at: string;
   updated_at: string;
+  customer_name?: string;
+  customer_phone?: string;
+  shipping_address?: any;
 }
 
 const OrderManagement = () => {
@@ -26,20 +29,33 @@ const OrderManagement = () => {
 
   const fetchOrders = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch from both orders table and customer_orders table to get complete data
+      const { data: ordersData, error: ordersError } = await supabase
         .from('orders')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
-      // Convert the data to match our Order interface
-      const ordersData = data?.map(order => ({
-        ...order,
-        items: Array.isArray(order.items) ? order.items : []
-      })) || [];
-      
-      setOrders(ordersData);
+      const { data: customerOrdersData, error: customerError } = await supabase
+        .from('customer_orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (ordersError) throw ordersError;
+      if (customerError) console.warn('Customer orders error:', customerError);
+
+      // Merge the data from both tables
+      const mergedOrders = ordersData?.map(order => {
+        const customerOrder = customerOrdersData?.find(co => co.order_id === order.id);
+        return {
+          ...order,
+          customer_name: customerOrder?.customer_name || 'N/A',
+          customer_phone: customerOrder?.customer_phone || 'N/A',
+          shipping_address: customerOrder?.shipping_address || null,
+          items: Array.isArray(order.items) ? order.items : []
+        };
+      }) || [];
+
+      setOrders(mergedOrders);
     } catch (error: any) {
       toast({
         title: "Error fetching orders",
@@ -62,6 +78,12 @@ const OrderManagement = () => {
     }
   };
 
+  const formatAddress = (address: any) => {
+    if (!address) return 'N/A';
+    if (typeof address === 'string') return address;
+    return `${address.street || ''}, ${address.city || ''}, ${address.state || ''}, ${address.pincode || ''}`.replace(/,\s*,/g, ',').replace(/^,\s*|,\s*$/g, '');
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -73,7 +95,10 @@ const OrderManagement = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Order ID</TableHead>
-              <TableHead>Customer Email</TableHead>
+              <TableHead>Customer Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Address</TableHead>
               <TableHead>Total Amount</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Items</TableHead>
@@ -84,7 +109,10 @@ const OrderManagement = () => {
             {orders.map((order) => (
               <TableRow key={order.id}>
                 <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}...</TableCell>
+                <TableCell>{order.customer_name}</TableCell>
                 <TableCell>{order.customer_email}</TableCell>
+                <TableCell>{order.customer_phone}</TableCell>
+                <TableCell className="max-w-xs truncate">{formatAddress(order.shipping_address)}</TableCell>
                 <TableCell>₹{order.total_amount}</TableCell>
                 <TableCell>
                   <Badge variant={getStatusBadgeVariant(order.status)}>
@@ -97,7 +125,7 @@ const OrderManagement = () => {
             ))}
             {orders.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                <TableCell colSpan={9} className="text-center text-gray-500 py-8">
                   No orders found
                 </TableCell>
               </TableRow>

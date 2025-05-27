@@ -1,155 +1,211 @@
 
-import { useState } from "react";
-import { Menu, X, ShoppingBag } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import { useCart } from "@/contexts/CartContext";
+import { useState, useEffect } from "react";
+import { Menu, X, ShoppingBag, Search, User, Heart } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import Cart from "./Cart";
+import { useCart } from "@/contexts/CartContext";
 
 const Navigation = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [showCart, setShowCart] = useState(false);
+  const [favoriteCount, setFavoriteCount] = useState(0);
   const { state } = useCart();
-  const navigate = useNavigate();
+  const location = useLocation();
 
-  const scrollToSection = (sectionId: string) => {
-    // Check if we're on the home page
-    if (window.location.pathname === '/') {
-      const element = document.getElementById(sectionId);
+  useEffect(() => {
+    // Update favorite count when favorites change
+    const updateFavoriteCount = () => {
+      const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+      setFavoriteCount(favorites.length);
+    };
+
+    updateFavoriteCount();
+    
+    // Listen for storage changes
+    window.addEventListener('storage', updateFavoriteCount);
+    
+    // Also listen for custom events when favorites are updated
+    const handleFavoriteUpdate = () => updateFavoriteCount();
+    window.addEventListener('favoriteUpdated', handleFavoriteUpdate);
+
+    return () => {
+      window.removeEventListener('storage', updateFavoriteCount);
+      window.removeEventListener('favoriteUpdated', handleFavoriteUpdate);
+    };
+  }, []);
+
+  const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const navItems = [
+    { name: "Home", path: "/" },
+    { name: "Collections", path: "/collections" },
+    { name: "About", path: "#about" },
+    { name: "Contact", path: "#contact" },
+  ];
+
+  const handleNavClick = (path: string) => {
+    if (path.startsWith('#')) {
+      // Handle anchor links
+      const element = document.querySelector(path);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
       }
-    } else {
-      // Navigate to home page first, then scroll
-      navigate('/');
-      setTimeout(() => {
-        const element = document.getElementById(sectionId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
     }
-    setIsMenuOpen(false);
-  };
-
-  const handleHomeClick = () => {
-    navigate('/');
-    setIsMenuOpen(false);
+    setIsOpen(false);
   };
 
   return (
     <>
-      <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-md z-50 border-b border-siya-100 shadow-lg">
+      <nav className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md border-b border-gray-200/20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-16 md:h-20">
             {/* Logo */}
-            <Link to="/" onClick={handleHomeClick} className="flex items-center group">
-              <img 
-                src="/lovable-uploads/02f499e8-6cbc-48bc-848a-e0ddac0d8f22.png" 
-                alt="Siyalabel" 
-                className="h-8 md:h-10 w-auto transition-transform duration-300 group-hover:scale-105"
-              />
+            <Link to="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-siya-500 to-magenta-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg md:text-xl">S</span>
+              </div>
+              <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-siya-600 to-magenta-600 bg-clip-text text-transparent">
+                Siya
+              </span>
             </Link>
 
-            {/* Desktop Menu */}
+            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              <button 
-                onClick={handleHomeClick}
-                className="text-gray-700 hover:text-siya-600 transition-all duration-300 font-medium relative after:content-[''] after:absolute after:w-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-gradient-to-r after:from-siya-500 after:to-magenta-500 after:transition-all after:duration-300 hover:after:w-full"
-              >
-                Home
-              </button>
-              <Link 
-                to="/collections"
-                className="text-gray-700 hover:text-siya-600 transition-all duration-300 font-medium relative after:content-[''] after:absolute after:w-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-gradient-to-r after:from-siya-500 after:to-magenta-500 after:transition-all after:duration-300 hover:after:w-full"
-              >
-                Collections
-              </Link>
-              <button 
-                onClick={() => scrollToSection('about')}
-                className="text-gray-700 hover:text-siya-600 transition-all duration-300 font-medium relative after:content-[''] after:absolute after:w-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-gradient-to-r after:from-siya-500 after:to-magenta-500 after:transition-all after:duration-300 hover:after:w-full"
-              >
-                About
-              </button>
-              <button 
-                onClick={() => scrollToSection('contact')}
-                className="text-gray-700 hover:text-siya-600 transition-all duration-300 font-medium relative after:content-[''] after:absolute after:w-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-gradient-to-r after:from-siya-500 after:to-magenta-500 after:transition-all after:duration-300 hover:after:w-full"
-              >
-                Contact
+              {navItems.map((item) => (
+                item.path.startsWith('#') ? (
+                  <button
+                    key={item.name}
+                    onClick={() => handleNavClick(item.path)}
+                    className="text-gray-700 hover:text-transparent hover:bg-gradient-to-r hover:from-siya-600 hover:to-magenta-600 hover:bg-clip-text transition-all duration-300 font-medium"
+                  >
+                    {item.name}
+                  </button>
+                ) : (
+                  <Link
+                    key={item.name}
+                    to={item.path}
+                    className={`text-gray-700 hover:text-transparent hover:bg-gradient-to-r hover:from-siya-600 hover:to-magenta-600 hover:bg-clip-text transition-all duration-300 font-medium ${
+                      location.pathname === item.path ? 'text-transparent bg-gradient-to-r from-siya-600 to-magenta-600 bg-clip-text' : ''
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                )
+              ))}
+            </div>
+
+            {/* Desktop Actions */}
+            <div className="hidden md:flex items-center space-x-6">
+              <button className="text-gray-700 hover:text-siya-600 transition-colors">
+                <Search className="h-5 w-5" />
               </button>
               
-              {/* Cart Button */}
-              <button
-                onClick={() => setIsCartOpen(true)}
-                className="relative p-3 text-gray-700 hover:text-siya-600 transition-all duration-300 hover:bg-siya-50 rounded-full group"
+              <Link 
+                to="/favorites"
+                className="relative text-gray-700 hover:text-siya-600 transition-colors"
               >
-                <ShoppingBag className="h-6 w-6 group-hover:scale-110 transition-transform duration-300" />
-                {state.items.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-siya-500 to-magenta-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center animate-pulse">
-                    {state.items.reduce((sum, item) => sum + item.quantity, 0)}
+                <Heart className="h-5 w-5" />
+                {favoriteCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-gradient-to-r from-siya-500 to-magenta-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+                    {favoriteCount}
+                  </span>
+                )}
+              </Link>
+
+              <button className="text-gray-700 hover:text-siya-600 transition-colors">
+                <User className="h-5 w-5" />
+              </button>
+
+              <button 
+                onClick={() => setShowCart(true)}
+                className="relative text-gray-700 hover:text-siya-600 transition-colors"
+              >
+                <ShoppingBag className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-gradient-to-r from-siya-500 to-magenta-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+                    {totalItems}
                   </span>
                 )}
               </button>
             </div>
 
-            {/* Mobile menu button */}
+            {/* Mobile Actions */}
             <div className="md:hidden flex items-center space-x-4">
-              <button
-                onClick={() => setIsCartOpen(true)}
-                className="relative p-2 text-gray-700 hover:text-siya-600 transition-colors duration-300"
+              <Link 
+                to="/favorites"
+                className="relative text-gray-700 hover:text-siya-600 transition-colors"
               >
-                <ShoppingBag className="h-6 w-6" />
-                {state.items.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-siya-500 to-magenta-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {state.items.reduce((sum, item) => sum + item.quantity, 0)}
+                <Heart className="h-5 w-5" />
+                {favoriteCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-gradient-to-r from-siya-500 to-magenta-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+                    {favoriteCount}
+                  </span>
+                )}
+              </Link>
+
+              <button 
+                onClick={() => setShowCart(true)}
+                className="relative text-gray-700 hover:text-siya-600 transition-colors"
+              >
+                <ShoppingBag className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-gradient-to-r from-siya-500 to-magenta-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
+                    {totalItems}
                   </span>
                 )}
               </button>
+
               <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-gray-700 hover:text-siya-600 transition-colors duration-300"
+                onClick={() => setIsOpen(!isOpen)}
+                className="text-gray-700 hover:text-siya-600 transition-colors"
               >
-                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
             </div>
           </div>
 
           {/* Mobile Menu */}
-          {isMenuOpen && (
-            <div className="md:hidden py-4 border-t border-siya-100 bg-white/95 backdrop-blur-md">
+          {isOpen && (
+            <div className="md:hidden py-4 border-t border-gray-200/20 bg-white/95 backdrop-blur-md">
               <div className="flex flex-col space-y-4">
-                <button 
-                  onClick={handleHomeClick}
-                  className="text-left text-gray-700 hover:text-siya-600 transition-colors duration-300 font-medium py-2"
-                >
-                  Home
-                </button>
-                <Link 
-                  to="/collections"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="text-left text-gray-700 hover:text-siya-600 transition-colors duration-300 font-medium py-2"
-                >
-                  Collections
-                </Link>
-                <button 
-                  onClick={() => scrollToSection('about')}
-                  className="text-left text-gray-700 hover:text-siya-600 transition-colors duration-300 font-medium py-2"
-                >
-                  About
-                </button>
-                <button 
-                  onClick={() => scrollToSection('contact')}
-                  className="text-left text-gray-700 hover:text-siya-600 transition-colors duration-300 font-medium py-2"
-                >
-                  Contact
-                </button>
+                {navItems.map((item) => (
+                  item.path.startsWith('#') ? (
+                    <button
+                      key={item.name}
+                      onClick={() => handleNavClick(item.path)}
+                      className="text-left text-gray-700 hover:text-transparent hover:bg-gradient-to-r hover:from-siya-600 hover:to-magenta-600 hover:bg-clip-text transition-all duration-300 font-medium px-4 py-2"
+                    >
+                      {item.name}
+                    </button>
+                  ) : (
+                    <Link
+                      key={item.name}
+                      to={item.path}
+                      onClick={() => setIsOpen(false)}
+                      className={`text-gray-700 hover:text-transparent hover:bg-gradient-to-r hover:from-siya-600 hover:to-magenta-600 hover:bg-clip-text transition-all duration-300 font-medium px-4 py-2 ${
+                        location.pathname === item.path ? 'text-transparent bg-gradient-to-r from-siya-600 to-magenta-600 bg-clip-text' : ''
+                      }`}
+                    >
+                      {item.name}
+                    </Link>
+                  )
+                ))}
+                
+                <div className="flex items-center space-x-6 px-4 py-2">
+                  <button className="text-gray-700 hover:text-siya-600 transition-colors">
+                    <Search className="h-5 w-5" />
+                  </button>
+                  <button className="text-gray-700 hover:text-siya-600 transition-colors">
+                    <User className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
       </nav>
 
-      {/* Cart Sidebar */}
-      <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+      <Cart isOpen={showCart} onClose={() => setShowCart(false)} />
     </>
   );
 };
