@@ -13,6 +13,7 @@ interface Product {
   price: number;
   image: string;
   category: string;
+  sizes: string[];
 }
 
 const CollectionDetail = () => {
