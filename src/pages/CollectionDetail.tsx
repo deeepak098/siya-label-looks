@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
@@ -33,7 +32,7 @@ const CollectionDetail = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, price, image, category')
+        .select('id, name, price, image, category, sizes')
         .eq('category', category)
         .eq('in_stock', true)
         .order('created_at', { ascending: false });
