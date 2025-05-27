@@ -10,9 +10,11 @@ import { supabase } from "@/integrations/supabase/client";
 interface ImageUploadProps {
   imageUrl: string;
   onImageChange: (url: string) => void;
+  bucketName?: string;
+  folder?: string;
 }
 
-const ImageUpload = ({ imageUrl, onImageChange }: ImageUploadProps) => {
+const ImageUpload = ({ imageUrl, onImageChange, bucketName = "product-images", folder = "products" }: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
@@ -45,23 +47,23 @@ const ImageUpload = ({ imageUrl, onImageChange }: ImageUploadProps) => {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `products/${fileName}`;
+      const filePath = `${folder}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('product-images')
+        .from(bucketName)
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage
-        .from('product-images')
+        .from(bucketName)
         .getPublicUrl(filePath);
 
       onImageChange(data.publicUrl);
       
       toast({
         title: "Image uploaded successfully",
-        description: "Your product image has been uploaded",
+        description: "Your image has been uploaded",
       });
     } catch (error: any) {
       toast({
@@ -80,13 +82,13 @@ const ImageUpload = ({ imageUrl, onImageChange }: ImageUploadProps) => {
 
   return (
     <div className="space-y-4">
-      <Label>Product Image</Label>
+      <Label>Image</Label>
       
       {imageUrl ? (
         <div className="relative">
           <img 
             src={imageUrl} 
-            alt="Product" 
+            alt="Uploaded image" 
             className="w-32 h-32 object-cover rounded-lg border"
           />
           <Button

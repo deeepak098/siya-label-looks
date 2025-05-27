@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, ShoppingCart, Users, DollarSign, LogOut, Image, FolderOpen } from "lucide-react";
+import { Package, ShoppingCart, Users, DollarSign, LogOut, Image, FolderOpen, Palette } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ProductManagement from "@/components/admin/ProductManagement";
@@ -12,6 +13,7 @@ import InventoryManagement from "@/components/admin/InventoryManagement";
 import DiscountCodeManagement from "@/components/admin/DiscountCodeManagement";
 import WebsiteAssetManager from "@/components/admin/WebsiteAssetManager";
 import CategoryManager from "@/components/admin/CategoryManager";
+import WebsiteCustomization from "@/components/admin/WebsiteCustomization";
 
 interface DashboardStats {
   totalProducts: number;
@@ -152,13 +154,14 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="products" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="products">Products</TabsTrigger>
             <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="inventory">Inventory</TabsTrigger>
-            <TabsTrigger value="discounts">Discount Codes</TabsTrigger>
+            <TabsTrigger value="discounts">Discounts</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="assets">Website Assets</TabsTrigger>
+            <TabsTrigger value="assets">Assets</TabsTrigger>
+            <TabsTrigger value="customization">Customization</TabsTrigger>
           </TabsList>
           
           <TabsContent value="products">
@@ -183,6 +186,10 @@ const AdminDashboard = () => {
           
           <TabsContent value="assets">
             <WebsiteAssetManager />
+          </TabsContent>
+          
+          <TabsContent value="customization">
+            <WebsiteCustomization />
           </TabsContent>
         </Tabs>
       </div>

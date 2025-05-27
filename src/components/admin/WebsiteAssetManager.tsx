@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Edit, Trash2, Upload, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import ImageUpload from "./ImageUpload";
 
 interface WebsiteAsset {
   id: string;
@@ -32,13 +33,12 @@ const WebsiteAssetManager = () => {
   const [assets, setAssets] = useState<WebsiteAsset[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<WebsiteAsset | null>(null);
-  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     asset_type: "",
     asset_name: "",
+    file_url: "",
     is_active: true
   });
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -63,31 +63,6 @@ const WebsiteAssetManager = () => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-    }
-  };
-
-  const uploadFile = async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `${formData.asset_type}/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('website-assets')
-      .upload(filePath, file);
-
-    if (uploadError) throw uploadError;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('website-assets')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -100,28 +75,20 @@ const WebsiteAssetManager = () => {
       return;
     }
 
-    if (!editingAsset && !selectedFile) {
+    if (!editingAsset && !formData.file_url) {
       toast({
-        title: "File required",
-        description: "Please select a file to upload",
+        title: "Image required",
+        description: "Please upload an image",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      setUploading(true);
-      
-      let fileUrl = editingAsset?.file_url || "";
-      
-      if (selectedFile) {
-        fileUrl = await uploadFile(selectedFile);
-      }
-
       const assetData = {
         asset_type: formData.asset_type,
         asset_name: formData.asset_name,
-        file_url: fileUrl,
+        file_url: formData.file_url,
         is_active: formData.is_active
       };
 
@@ -142,8 +109,7 @@ const WebsiteAssetManager = () => {
         toast({ title: "Asset uploaded successfully" });
       }
 
-      setFormData({ asset_type: "", asset_name: "", is_active: true });
-      setSelectedFile(null);
+      setFormData({ asset_type: "", asset_name: "", file_url: "", is_active: true });
       setIsDialogOpen(false);
       setEditingAsset(null);
       fetchAssets();
@@ -153,8 +119,6 @@ const WebsiteAssetManager = () => {
         description: error.message,
         variant: "destructive",
       });
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -183,16 +147,15 @@ const WebsiteAssetManager = () => {
     setFormData({
       asset_type: asset.asset_type,
       asset_name: asset.asset_name,
+      file_url: asset.file_url,
       is_active: asset.is_active
     });
-    setSelectedFile(null);
     setIsDialogOpen(true);
   };
 
   const handleAddNew = () => {
     setEditingAsset(null);
-    setFormData({ asset_type: "", asset_name: "", is_active: true });
-    setSelectedFile(null);
+    setFormData({ asset_type: "", asset_name: "", file_url: "", is_active: true });
     setIsDialogOpen(true);
   };
 
@@ -247,32 +210,12 @@ const WebsiteAssetManager = () => {
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="file">Image File {!editingAsset && '*'}</Label>
-                  <Input
-                    id="file"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="mt-1"
-                  />
-                  {editingAsset && !selectedFile && (
-                    <p className="text-sm text-gray-500 mt-1">Leave empty to keep current image</p>
-                  )}
-                </div>
-
-                {editingAsset && editingAsset.file_url && !selectedFile && (
-                  <div>
-                    <Label>Current Image</Label>
-                    <div className="mt-1 border rounded-md p-2">
-                      <img 
-                        src={editingAsset.file_url} 
-                        alt={editingAsset.asset_name}
-                        className="w-32 h-32 object-cover rounded"
-                      />
-                    </div>
-                  </div>
-                )}
+                <ImageUpload
+                  imageUrl={formData.file_url}
+                  onImageChange={(url) => setFormData({ ...formData, file_url: url })}
+                  bucketName="website-assets"
+                  folder={formData.asset_type || "general"}
+                />
 
                 <div className="flex items-center space-x-2">
                   <input
@@ -284,18 +227,9 @@ const WebsiteAssetManager = () => {
                   <Label htmlFor="is_active">Active</Label>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={uploading}>
-                  {uploading ? (
-                    <>
-                      <Upload className="h-4 w-4 mr-2 animate-spin" />
-                      {editingAsset ? 'Updating...' : 'Uploading...'}
-                    </>
-                  ) : (
-                    <>
-                      <ImageIcon className="h-4 w-4 mr-2" />
-                      {editingAsset ? 'Update Asset' : 'Upload Asset'}
-                    </>
-                  )}
+                <Button type="submit" className="w-full">
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                  {editingAsset ? 'Update Asset' : 'Upload Asset'}
                 </Button>
               </form>
             </DialogContent>

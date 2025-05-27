@@ -45,10 +45,14 @@ const Navigation = () => {
 
   const handleNavClick = (path: string) => {
     if (path.startsWith('#')) {
-      // Handle anchor links
-      const element = document.querySelector(path);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+      // Handle anchor links - navigate to home first if not already there
+      if (location.pathname !== '/') {
+        window.location.href = '/' + path;
+      } else {
+        const element = document.querySelector(path);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
       }
     }
     setIsOpen(false);
@@ -61,10 +65,7 @@ const Navigation = () => {
           <div className="flex justify-between items-center h-16 md:h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r from-siya-500 to-magenta-500 rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-lg md:text-xl">S</span>
-              </div>
-              <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-siya-600 to-magenta-600 bg-clip-text text-transparent">
+              <span className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-siya-600 to-magenta-600 bg-clip-text text-transparent">
                 Siya
               </span>
             </Link>

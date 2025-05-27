@@ -31,6 +31,8 @@ const InventoryManager = ({ productId, sizes }: InventoryManagerProps) => {
 
   const fetchInventory = async () => {
     try {
+      console.log('Fetching inventory for product:', productId, 'sizes:', sizes);
+      
       const { data, error } = await supabase
         .from('inventory')
         .select('*')
@@ -40,7 +42,6 @@ const InventoryManager = ({ productId, sizes }: InventoryManagerProps) => {
 
       console.log('Fetched inventory:', data);
 
-      // Create inventory entries for all current sizes
       const existingInventory = data || [];
       const existingSizes = existingInventory.map(item => item.size);
       
@@ -48,6 +49,7 @@ const InventoryManager = ({ productId, sizes }: InventoryManagerProps) => {
       const missingSizes = sizes.filter(size => !existingSizes.includes(size));
       
       if (missingSizes.length > 0) {
+        console.log('Adding missing sizes:', missingSizes);
         const newEntries = missingSizes.map(size => ({
           product_id: productId,
           size,
@@ -70,6 +72,7 @@ const InventoryManager = ({ productId, sizes }: InventoryManagerProps) => {
       // Remove inventory entries for sizes no longer selected
       const sizesToRemove = existingSizes.filter(size => !sizes.includes(size));
       if (sizesToRemove.length > 0) {
+        console.log('Removing obsolete sizes:', sizesToRemove);
         const { error: deleteError } = await supabase
           .from('inventory')
           .delete()
@@ -78,7 +81,6 @@ const InventoryManager = ({ productId, sizes }: InventoryManagerProps) => {
 
         if (deleteError) throw deleteError;
         
-        // Update local state
         setInventory(prev => prev.filter(item => sizes.includes(item.size)));
       }
     } catch (error: any) {
@@ -94,6 +96,8 @@ const InventoryManager = ({ productId, sizes }: InventoryManagerProps) => {
   const updateInventory = async (inventoryId: string, quantity: number, isAvailable: boolean) => {
     try {
       setLoading(true);
+      console.log('Updating inventory:', inventoryId, 'quantity:', quantity, 'available:', isAvailable);
+      
       const { error } = await supabase
         .from('inventory')
         .update({ 
@@ -116,6 +120,7 @@ const InventoryManager = ({ productId, sizes }: InventoryManagerProps) => {
         description: "Stock quantity has been updated successfully",
       });
     } catch (error: any) {
+      console.error('Error updating inventory:', error);
       toast({
         title: "Error updating inventory",
         description: error.message,
@@ -169,6 +174,15 @@ const InventoryManager = ({ productId, sizes }: InventoryManagerProps) => {
                 disabled={loading}
               />
               <Label className="text-xs">Available</Label>
+            </div>
+            <div className="text-xs">
+              <span className={`px-2 py-1 rounded ${
+                item.quantity > 0 && item.is_available 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {item.quantity > 0 && item.is_available ? 'In Stock' : 'Out of Stock'}
+              </span>
             </div>
           </div>
         ))}
