@@ -268,6 +268,60 @@ export type Database = {
         }
         Relationships: []
       }
+      website_settings: {
+        Row: {
+          background_color: string
+          contact_email: string
+          contact_phone: string
+          created_at: string
+          font_family: string
+          footer_text: string
+          hero_image_url: string | null
+          hero_subtitle: string
+          hero_title: string
+          id: string
+          logo_url: string | null
+          primary_color: string
+          secondary_color: string
+          text_color: string
+          updated_at: string
+        }
+        Insert: {
+          background_color?: string
+          contact_email?: string
+          contact_phone?: string
+          created_at?: string
+          font_family?: string
+          footer_text?: string
+          hero_image_url?: string | null
+          hero_subtitle?: string
+          hero_title?: string
+          id?: string
+          logo_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          text_color?: string
+          updated_at?: string
+        }
+        Update: {
+          background_color?: string
+          contact_email?: string
+          contact_phone?: string
+          created_at?: string
+          font_family?: string
+          footer_text?: string
+          hero_image_url?: string | null
+          hero_subtitle?: string
+          hero_title?: string
+          id?: string
+          logo_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          text_color?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

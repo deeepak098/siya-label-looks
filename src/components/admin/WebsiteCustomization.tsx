@@ -61,7 +61,7 @@ const WebsiteCustomization = () => {
   const fetchSettings = async () => {
     try {
       const { data, error } = await supabase
-        .from('website_settings')
+        .from('website_settings' as any)
         .select('*')
         .limit(1)
         .maybeSingle();
@@ -92,14 +92,14 @@ const WebsiteCustomization = () => {
 
       if (settings.id) {
         const { error } = await supabase
-          .from('website_settings')
+          .from('website_settings' as any)
           .update(settingsData)
           .eq('id', settings.id);
 
         if (error) throw error;
       } else {
         const { data, error } = await supabase
-          .from('website_settings')
+          .from('website_settings' as any)
           .insert([settingsData])
           .select()
           .single();
