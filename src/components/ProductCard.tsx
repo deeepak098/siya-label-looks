@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { ShoppingBag, Heart } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,7 +68,10 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation to product detail
+    e.stopPropagation();
+    
     if (!selectedSize) {
       toast({
         title: "Please select a size",
@@ -105,7 +109,10 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
     });
   };
 
-  const toggleFavorite = () => {
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation to product detail
+    e.stopPropagation();
+    
     const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
     let newFavorites;
     
@@ -125,8 +132,9 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
   };
 
   return (
-    <div 
-      className="group cursor-pointer animate-fade-in"
+    <Link
+      to={`/product/${product.id}`}
+      className="group cursor-pointer animate-fade-in block"
       style={{ animationDelay: `${index * 200}ms` }}
     >
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-siya-50 to-magenta-50 aspect-[4/5] mb-4 group-hover:scale-105 transition-all duration-700 shadow-lg group-hover:shadow-2xl">
@@ -156,7 +164,11 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
                   return (
                     <button
                       key={size}
-                      onClick={() => isAvailable && setSelectedSize(size)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (isAvailable) setSelectedSize(size);
+                      }}
                       disabled={!isAvailable}
                       className={`w-6 h-6 md:w-8 md:h-8 rounded-lg text-xs font-medium transition-all duration-200 ${
                         selectedSize === size && isAvailable
@@ -190,7 +202,7 @@ const ProductCard = ({ product, index }: ProductCardProps) => {
         </h3>
         <p className="text-transparent bg-gradient-to-r from-siya-600 to-magenta-600 bg-clip-text font-semibold text-base md:text-lg">₹{product.price.toLocaleString()}</p>
       </div>
-    </div>
+    </Link>
   );
 };
 

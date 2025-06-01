@@ -61,7 +61,7 @@ const WebsiteCustomization = () => {
   const fetchSettings = async () => {
     try {
       const { data, error } = await supabase
-        .from('website_settings' as any)
+        .from('website_settings')
         .select('*')
         .limit(1)
         .maybeSingle();
@@ -69,7 +69,7 @@ const WebsiteCustomization = () => {
       if (error) throw error;
       
       if (data) {
-        setSettings(data as WebsiteSettings);
+        setSettings(data);
       }
     } catch (error: any) {
       console.error('Error fetching settings:', error);
@@ -92,20 +92,20 @@ const WebsiteCustomization = () => {
 
       if (settings.id) {
         const { error } = await supabase
-          .from('website_settings' as any)
+          .from('website_settings')
           .update(settingsData)
           .eq('id', settings.id);
 
         if (error) throw error;
       } else {
         const { data, error } = await supabase
-          .from('website_settings' as any)
+          .from('website_settings')
           .insert([settingsData])
           .select()
           .single();
 
         if (error) throw error;
-        setSettings(data as WebsiteSettings);
+        setSettings(data);
       }
 
       toast({
@@ -212,12 +212,15 @@ const WebsiteCustomization = () => {
               placeholder="Discover amazing products"
             />
           </div>
-          <ImageUpload
-            imageUrl={settings.hero_image_url}
-            onImageChange={(url) => setSettings({ ...settings, hero_image_url: url })}
-            bucketName="website-assets"
-            folder="hero"
-          />
+          <div>
+            <Label>Hero Background Image</Label>
+            <ImageUpload
+              imageUrl={settings.hero_image_url}
+              onImageChange={(url) => setSettings({ ...settings, hero_image_url: url })}
+              bucketName="website-assets"
+              folder="hero"
+            />
+          </div>
         </div>
 
         {/* Contact Information */}
