@@ -1,17 +1,86 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { db, collection, getDocs, query } from "@/lib/firebase";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
-    revenueToday: 12400,
-    revenueWeek: 85600,
-    revenueMonth: 342000,
-    ordersToday: 8,
-    ordersWeek: 54,
-    ordersMonth: 210,
-    pendingOrders: 12,
-    lowStockItems: 5,
+    revenueToday: 0,
+    revenueWeek: 0,
+    revenueMonth: 0,
+    ordersToday: 0,
+    ordersWeek: 0,
+    ordersMonth: 0,
+    pendingOrders: 0,
+    lowStockItems: 0,
   });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      const ordersSnap = await getDocs(collection(db, "orders"));
+      const productsSnap = await getDocs(collection(db, "products"));
+
+      let revToday = 0, revWeek = 0, revMonth = 0;
+      let ordToday = 0, ordWeek = 0, ordMonth = 0;
+      let pending = 0;
+
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000;
+      const monthStart = todayStart - 30 * 24 * 60 * 60 * 1000;
+
+      ordersSnap.docs.forEach((docSnap) => {
+        const data = docSnap.data();
+        const amt = Number(data.total_amount || data.total || 0);
+        const status = data.status || "placed";
+        const orderTime = new Date(data.created_at || Date.now()).getTime();
+
+        if (status === "placed" || status === "confirmed") {
+          pending++;
+        }
+
+        if (orderTime >= todayStart) {
+          revToday += amt;
+          ordToday++;
+        }
+        if (orderTime >= weekStart) {
+          revWeek += amt;
+          ordWeek++;
+        }
+        if (orderTime >= monthStart) {
+          revMonth += amt;
+          ordMonth++;
+        }
+      });
+
+      let lowStock = 0;
+      productsSnap.docs.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.in_stock === false || (data.stock !== undefined && Number(data.stock) < 5)) {
+          lowStock++;
+        }
+      });
+
+      setStats({
+        revenueToday: revToday,
+        revenueWeek: revWeek,
+        revenueMonth: revMonth,
+        ordersToday: ordToday,
+        ordersWeek: ordWeek,
+        ordersMonth: ordMonth,
+        pendingOrders: pending,
+        lowStockItems: lowStock,
+      });
+    } catch (err) {
+      console.error("Error loading dashboard stats:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
